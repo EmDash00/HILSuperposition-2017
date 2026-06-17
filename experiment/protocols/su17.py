@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import absolute_import
+from past.utils import old_div
 import sys
 
 import numpy as np
@@ -5,12 +8,12 @@ import pylab as plt
 import matplotlib 
 from matplotlib import rc
 
-import globals
+from . import globals
 
-from dynamics import fo, so, zd11, zd12
+from .dynamics import fo, so, zd11, zd12
 
-from references import sum_of_sines_ramp as sos
-from references import zero as zero
+from .references import sum_of_sines_ramp as sos
+from .references import zero as zero
 refs = dict(sos=sos,zero=zero)
 
 # vector fields
@@ -85,8 +88,8 @@ for _,phase_shift in enumerate(phase_shifts_r):
   t = np.arange(ramp,ramp+period,globals.STEP)
   dt = np.diff(t)
   r = sos(t,trial,None,frequencies_r,amplitudes_r,phase_shift)
-  dr = np.diff(r)/dt
-  ddr = np.diff(dr)/dt[1:]
+  dr = old_div(np.diff(r),dt)
+  ddr = old_div(np.diff(dr),dt[1:])
   #
   scale['fo'] = max(scale['fo'],np.abs(dr).max())
   scale['so'] = max(scale['so'],np.abs(ddr).max())
@@ -149,7 +152,7 @@ alpha_fill = 0.2
 ylim_out = (-1.,+1.)
 #
 prc = 0
-prcs = [50,prc/2,100-prc/2] 
+prcs = [50,old_div(prc,2),100-old_div(prc,2)] 
 do_bootstrap_means = False
 #
 def analysis(trials,title='',rescale=False,**util):
@@ -223,9 +226,9 @@ def analysis(trials,title='',rescale=False,**util):
           if rd == 'r-sos_d-zero':
             refs[rd].append(sgn*trial['ref_'][samps])
             if vf == 'fo':
-              pred = sgn*(np.diff(trial['ref_']) / np.diff(trial['time_']))[samps]
+              pred = sgn*(old_div(np.diff(trial['ref_']), np.diff(trial['time_'])))[samps]
             elif vf == 'so':
-              pred = sgn*(np.diff(np.diff(trial['ref_'])) / np.diff(trial['time_'])[1:]**2)[samps[:-1]]
+              pred = sgn*(old_div(np.diff(np.diff(trial['ref_'])), np.diff(trial['time_'])[1:]**2))[samps[:-1]]
               pred = np.hstack((pred,pred[-1]))
           elif rd == 'r-zero_d-sos':
             refs[rd].append(-sgn*trial['dis_'][samps])
@@ -233,10 +236,10 @@ def analysis(trials,title='',rescale=False,**util):
           elif rd == 'r-sos_d-sos':
             refs[rd].append(sgn*trial['ref_'][samps])
             if vf == 'fo':
-              pred = (sgn*(np.diff(trial['ref_']) / np.diff(trial['time_']))[samps] 
+              pred = (sgn*(old_div(np.diff(trial['ref_']), np.diff(trial['time_'])))[samps] 
                       - sgn*trial['dis_'][samps])
             elif vf == 'so':
-              pred = (sgn*(np.diff(np.diff(trial['ref_'])) / np.diff(trial['time_'])[1:]**2)[samps[:-1]]
+              pred = (sgn*(old_div(np.diff(np.diff(trial['ref_'])), np.diff(trial['time_'])[1:]**2))[samps[:-1]]
                       - sgn*trial['dis_'][samps[:-1]])
               pred = np.hstack((pred,pred[-1]))
 
@@ -287,33 +290,33 @@ def analysis(trials,title='',rescale=False,**util):
           ylabel_abs = 'magnitude'
           ylabel_ang = 'phase'
           yticklabels = None
-          usr_fft_ = np.fft.fft(outs_)[:,:L/2]
-          sys_fft_ = np.fft.fft(refs_)[:,:L/2]
+          usr_fft_ = np.fft.fft(outs_)[:,:old_div(L,2)]
+          sys_fft_ = np.fft.fft(refs_)[:,:old_div(L,2)]
         elif rd == 'r-sos_d-sos':
           ylabel_abs = ''
           ylabel_ang = ''
           yticklabels = None
-          usr_fft_ = np.fft.fft(outs_)[:,:L/2]
-          sys_fft_ = np.fft.fft(refs_)[:,:L/2]
+          usr_fft_ = np.fft.fft(outs_)[:,:old_div(L,2)]
+          sys_fft_ = np.fft.fft(refs_)[:,:old_div(L,2)]
         elif rd == 'r-zero_d-sos':
           ylabel_abs = ''
           ylabel_ang = ''
           yticklabels = None
-          usr_fft_ = np.fft.fft(inps_)[:,:L/2]
-          sys_fft_ = np.fft.fft(refs_)[:,:L/2]
-        freqs = np.arange(L/2)/(np.median(np.diff(times))*L)/f_base
+          usr_fft_ = np.fft.fft(inps_)[:,:old_div(L,2)]
+          sys_fft_ = np.fft.fft(refs_)[:,:old_div(L,2)]
+        freqs = old_div(old_div(np.arange(old_div(L,2)),(np.median(np.diff(times))*L)),f_base)
         if do_bootstrap_means:
-          bootstrap_means = util['bootstrap_mean'](np.abs(usr_fft_)/L)
+          bootstrap_means = util['bootstrap_mean'](old_div(np.abs(usr_fft_),L))
           usr_fft_abs = np.percentile(bootstrap_means,prcs,axis=0)
         else:
-          usr_fft_abs = np.percentile(np.abs(usr_fft_),prcs,axis=0)/L
+          usr_fft_abs = old_div(np.percentile(np.abs(usr_fft_),prcs,axis=0),L)
         # abs
         if rd == 'r-sos_d-sos':
-          sys_fft_abs = np.abs(sys_fft_).sum(axis=0)/L
-          ax2.plot(freqs,np.abs(usr_fft_).T/L,color=col_out,zorder=10)
+          sys_fft_abs = old_div(np.abs(sys_fft_).sum(axis=0),L)
+          ax2.plot(freqs,old_div(np.abs(usr_fft_).T,L),color=col_out,zorder=10)
           ax2.plot(freqs,sys_fft_abs,lw=2*lw,color=col_ref)
         else:
-          sys_fft_abs = np.abs(sys_fft_.mean(axis=0))/L
+          sys_fft_abs = old_div(np.abs(sys_fft_.mean(axis=0)),L)
           ax2.fill_between(freqs,usr_fft_abs[1],usr_fft_abs[2],color=col_out,zorder=10,alpha=alpha_fill)
           ax2.plot(freqs,usr_fft_abs[1:].T,'--',lw=1*lw,color=col_out,zorder=10)
           ax2.plot(freqs,usr_fft_abs[0],   '-', lw=2*lw,color=col_out,zorder=10)
@@ -327,7 +330,7 @@ def analysis(trials,title='',rescale=False,**util):
                             yticklabels=yticklabels)
         # ang
         # TODO look up how to compute dispersion using circular statistics
-        _ = (usr_fft_/sys_fft_); _ /= np.abs(_)
+        _ = (old_div(usr_fft_,sys_fft_)); _ /= np.abs(_)
         usr_fft_ang = np.angle(_.mean(axis=0))
         _ = sys_fft_; _ /= np.abs(_)
         sys_fft_ang = np.angle(_.mean(axis=0))

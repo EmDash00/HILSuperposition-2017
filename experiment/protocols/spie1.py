@@ -1,12 +1,17 @@
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import numpy as np
 import pylab as plt
 import matplotlib 
 from matplotlib import rc
 
-from dynamics import fo, so, zd11, zd12
+from .dynamics import fo, so, zd11, zd12
 
-from references import spline as ref
-from references import spline_interp
+from .references import spline as ref
+from .references import spline_interp
 
 from disturbances import zero as dis
 
@@ -70,7 +75,7 @@ xlim = (1.,3.)
 ylim_out = (-0.1,+.5)
 #
 prc = 25
-prcs = [50,prc/2,100-prc/2] 
+prcs = [50,old_div(prc,2),100-old_div(prc,2)] 
 do_bootstrap_means = False
 #
 aggro = 1.
@@ -78,7 +83,7 @@ do_gains = True
 #do_gains = False
 #
 if do_gains:
-  from spie2 import gain_sim
+  from .spie2 import gain_sim
   p_gains = eval(''.join(open('p_gains.txt','r').readlines()).replace('array',''))
   pd_gains = eval(''.join(open('pd_gains.txt','r').readlines()).replace('array',''))
 # pure feedback simulation
@@ -90,7 +95,7 @@ def pred_zd12(time,state0,ref):
     dt = time[ti+1] - time[ti]
     t = time[ti]
     xi,zeta,dzeta = state[ti]
-    inp[ti] = 2 * ( (ref[ti+1]-ref[ti]) / dt - .5 * dzeta )
+    inp[ti] = 2 * ( old_div((ref[ti+1]-ref[ti]), dt) - .5 * dzeta )
     state[ti+1] = state[ti] + dt * zd12(t,state[ti],inp[ti])
   inp[-1] = inp[-2]
   return state,inp
@@ -118,7 +123,7 @@ def analysis(trials,title='',rescale=False,**util):
     axs[vf]['+'] = [plt.subplot(2,3,1),plt.subplot(2,3,4)]
     axs[vf]['-'] = [plt.subplot(2,3,2),plt.subplot(2,3,5)]
     axs[vf]['+/-'] = [plt.subplot(2,3,3),plt.subplot(2,3,6)]
-    for s in axs[vf].keys():
+    for s in list(axs[vf].keys()):
       for i,id in enumerate(ids):
         subj,proto,_ = id.split('_',2)
         if not proto == 'spie1':
@@ -132,7 +137,7 @@ def analysis(trials,title='',rescale=False,**util):
           continue
         sc = 1.
         if rescale:
-          sc = max(jumps)/jump
+          sc = old_div(max(jumps),jump)
         trial = trials[id]
         ax0,ax1 = axs[vf][s]
         #
@@ -182,7 +187,7 @@ def analysis(trials,title='',rescale=False,**util):
         outs[j[1:]].append(sgn*sc*trial['out_'][samps]+jump)
         # inp
         if vf == 'fo':
-          pred = np.diff(sgn*sc*trial['ref_']) / np.diff(trial['time_'])
+          pred = old_div(np.diff(sgn*sc*trial['ref_']), np.diff(trial['time_']))
           pred = np.hstack((pred,[0.]))
         elif vf == 'zd12':
           if jump > .15:
@@ -199,7 +204,7 @@ def analysis(trials,title='',rescale=False,**util):
           #plt.plot(pred)
           #1/0
         elif vf == 'so':
-          pred = np.diff(np.diff(sgn*sc*trial['ref_'])) / np.diff(trial['time_'])[1:]**2
+          pred = old_div(np.diff(np.diff(sgn*sc*trial['ref_'])), np.diff(trial['time_'])[1:]**2)
           pred = np.hstack((pred,[0.,0.]))
         if vf == 'fo' and do_gains:
           lines['p_inp']  = ax1.plot(trial['time_'],sgn*sc*p_gain_inp,'-',lw=2*lw,color=col_p_gain,zorder=-10)

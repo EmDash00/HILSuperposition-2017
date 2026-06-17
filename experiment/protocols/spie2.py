@@ -1,20 +1,26 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import numpy as np
 import pylab as plt
 import matplotlib 
 from matplotlib import rc
 
-from dynamics import fo, so, zd11, zd12
+from .dynamics import fo, so, zd11, zd12
 
-from references import spline as ref_
-from references import spline_interp
+from .references import spline as ref_
+from .references import spline_interp
 
 from disturbances import zero as dis
 
 nls = dict()
 # sigmoidal nonlinearity (maps [-.5,.5] to [-.5,.5])
-nls['sig'] = lambda h,s=4. : np.arctan(s*h)/np.arctan(s/2.)/2.
+nls['sig'] = lambda h,s=4. : old_div(np.arctan(s*h),np.arctan(s/2.))/2.
 # inverse of sigmoidal nonlinearity -- ln \circ nl = \id
-nls['gis'] = lambda y,s=4. : np.tan(2*np.arctan(s/2.)*y)/s
+nls['gis'] = lambda y,s=4. : old_div(np.tan(2*np.arctan(s/2.)*y),s)
 # vector fields
 vfs = ['fo']
 # reference goes from -jump to jump for each jump in jump
@@ -78,7 +84,7 @@ xlim = (1.,3.)
 ylim_out = (-0.1,+.5)
 #
 prc = 25 
-prcs = [50,prc/2,100-prc/2] 
+prcs = [50,old_div(prc,2),100-old_div(prc,2)] 
 do_bootstrap_means = False
 #
 # multiplicative factor for "aggressiveness" of pure feedback
@@ -98,7 +104,7 @@ def gain_sim(gains,vf,nl,ln,time,state0,ref):
     dt = time[ti+1] - time[ti]
     t = time[ti]
     ede = np.vstack(( ref[ti] - nl(state[ti]),
-                    ( (ref[ti] - ref[ti-1]) - (nl(state[ti]) - nl(state[ti-1])) ) / dt ))
+                    old_div(( (ref[ti] - ref[ti-1]) - (nl(state[ti]) - nl(state[ti-1])) ), dt) ))
     #ede = np.vstack(( ln(ref[ti]) - state[ti],
     #                ( (ln(ref[ti]) - ln(ref[ti-1])) - (state[ti] - state[ti-1]) ) / dt ))
     inp[ti] = np.dot( gains, ede )
@@ -141,7 +147,7 @@ def analysis(trials,title='',rescale=False,**util):
         gain_samps = ((trial['time_'] >= 1.5)*(trial['time_'] <= 2.5)).nonzero()[0]
         # collect output errors and inputs for subject
         error = trial['ref_'] - trial['out_']
-        derror = np.hstack((0.,np.diff(error)/np.diff(time))) # + np.random.randn(time.size)*1e-2
+        derror = np.hstack((0.,old_div(np.diff(error),np.diff(time)))) # + np.random.randn(time.size)*1e-2
         inp = trial['inp_']
         if subj not in errors:
           errors[subj] = []; derrors[subj] = []; inps[subj] = []
@@ -160,7 +166,7 @@ def analysis(trials,title='',rescale=False,**util):
         #errors[subj+'_'].append(error[gain_samps])
         #inps[subj+'_'].append(inp[gain_samps])
     # estimate proportional feedback gain from errors and inputs
-    for subj in errors.keys():
+    for subj in list(errors.keys()):
       # solve for gain via linear least-squares: 
       #   error = gain * inp
       error = np.hstack(errors[subj])
@@ -174,8 +180,8 @@ def analysis(trials,title='',rescale=False,**util):
                                np.linalg.inv(np.dot(E,E.T)) )
     open('p_gains.txt','w').write(str(p_gains))
     open('pd_gains.txt','w').write(str(pd_gains))
-    print p_gains
-    print pd_gains
+    print(p_gains)
+    print(pd_gains)
     #print [(k,v) for k,v in p_gains.items() if '_' not in k]
     #print [(k,v) for k,v in pd_gains.items() if '_' not in k]
     #1/0
@@ -193,7 +199,7 @@ def analysis(trials,title='',rescale=False,**util):
       axs[vf]['-'] = [plt.subplot(2,3,2),plt.subplot(2,3,5)]
       axs[vf]['+/-'] = [plt.subplot(2,3,3),plt.subplot(2,3,6)]
       #
-      for s in axs[vf].keys():
+      for s in list(axs[vf].keys()):
         for i,id in enumerate(ids):
           subj,proto,_ = id.split('_',2)
           if not proto == 'spie2':
@@ -206,7 +212,7 @@ def analysis(trials,title='',rescale=False,**util):
           jump = float(j[2:])
           sc = 1.
           if rescale:
-            sc = max(jumps)/jump
+            sc = old_div(max(jumps),jump)
           trial = trials[id]
           ax0,ax1 = axs[vf][s]
           #
@@ -259,11 +265,11 @@ def analysis(trials,title='',rescale=False,**util):
           # inp
           if vf == 'fo' or vf == 'zd12':
             # pure feedforward input
-            pred = np.diff(sgn*sc*nls[ln](trial['ref_'])) / np.diff(trial['time_'])
+            pred = old_div(np.diff(sgn*sc*nls[ln](trial['ref_'])), np.diff(trial['time_']))
             pred = np.hstack((pred,[0.]))
             #
           if vf == 'so':
-            pred = np.diff(np.diff(sgn*sc*nls[ln](trial['ref_']))) / np.diff(trial['time_'])[1:]**2
+            pred = old_div(np.diff(np.diff(sgn*sc*nls[ln](trial['ref_']))), np.diff(trial['time_'])[1:]**2)
             pred = np.hstack((pred,[0.,0.]))
           if do_gains:
             lines['p_inp']  = ax1.plot(trial['time_'],sgn*sc*p_gain_inp,'-',lw=2*lw,color=col_p_gain,zorder=-10)

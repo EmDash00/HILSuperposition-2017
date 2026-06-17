@@ -1,5 +1,9 @@
-import numpy as np
+from __future__ import print_function
 
-abc = 'abcdefghijklmnopqrstuvwxyz'
+from numpy.random import RandomState
 
-print ''.join(np.random.choice(list(abc),2))
+rng = RandomState()
+
+abc = "abcdefghijklmnopqrstuvwxyz"
+
+print("".join(rng.choice(list(abc), 2)))

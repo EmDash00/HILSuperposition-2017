@@ -1,22 +1,25 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import serial
-from time import sleep
-import numpy as np
+from __future__ import print_function
+
 import struct
+from builtins import object, range
+from time import sleep
+
+import numpy as np
+import serial
 import serial.tools.list_ports
 
-COM_PORT = 'COM9'
-COM_PORT = '/dev/tty.usbmodem141121'
+COM_PORT = "COM9"
+COM_PORT = "/dev/tty.usbmodem141121"
 
-class sliderUSB():
 
-    def __init__(self, port=COM_PORT, debugMode = False):
-
-        self.arduinoSerial = serial.Serial(port = port, baudrate = 115200,
-        timeout=0.1,
-        bytesize=serial.EIGHTBITS)
+class sliderUSB(object):
+    def __init__(self, port=COM_PORT, debugMode=False):
+        self.arduinoSerial = serial.Serial(
+            port=port, baudrate=115200, timeout=0.1, bytesize=serial.EIGHTBITS
+        )
         self.data = np.array([])
         self.debugMode = debugMode
 
@@ -24,48 +27,49 @@ class sliderUSB():
         self.clearUSBRecBuffer()
 
     def clearUSBRecBuffer(self):
-        while (self.arduinoSerial.inWaiting()):
+        while self.arduinoSerial.in_waiting:
             self.arduinoSerial.read()
         if self.debugMode:
-            print 'USB received buffer cleared\n'
+            print("USB received buffer cleared\n")
 
     def startArduino(self):
         self.stopArduino()
         self.clearUSBRecBuffer()
-        self.arduinoSerial.write(bytearray('a'))
+        self.arduinoSerial.write(b"a")
         if self.debugMode:
-            print 'Arduino started.\n'
+            print("Arduino started.\n")
 
     def stopArduino(self):
-        self.arduinoSerial.write(bytearray('A'))
+        self.arduinoSerial.write(b"A")
         if self.debugMode:
-            print 'Arduino stopped.\n'
+            print("Arduino stopped.\n")
 
     def grabData(self):
-        self.arduinoSerial.write(bytearray('g'))
-        while(self.arduinoSerial.inWaiting()<8):
+        self.arduinoSerial.write(b"g")
+        while self.arduinoSerial.in_waiting < 8:
             pass
-        self.data = struct.unpack('<fI', self.arduinoSerial.read(8))
+        self.data = struct.unpack("<fI", self.arduinoSerial.read(8))
         return self.data
 
-if __name__ == '__main__':
-    #arduinoPorts = [p.device
-    #for p in serial.tools.list_ports.comports()
-    #if 'Arduino' in p.description
-    #]
+
+if __name__ == "__main__":
+    # arduinoPorts = [p.device
+    # for p in serial.tools.list_ports.comports()
+    # if 'Arduino' in p.description
+    # ]
 
     sliderJoystick = sliderUSB(port=COM_PORT)
 
     sliderJoystick.startArduino()
-    print 'phase 1'
-    for n in range(0,200):
-        print sliderJoystick.grabData()     #or append it to your other data or whatever
-        sleep(1./50.) 
+    print("phase 1")
+    for n in range(0, 200):
+        print(sliderJoystick.grabData())  # or append it to your other data or whatever
+        sleep(1.0 / 50.0)
 
-    #sleep(3)
-    #print('Slept Some')
+    # sleep(3)
+    # print('Slept Some')
 
-    #for n in range(0,20):
+    # for n in range(0,20):
     #    print sliderJoystick.grabData()
     sliderJoystick.stopArduino()
 
