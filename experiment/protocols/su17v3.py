@@ -102,6 +102,12 @@ phase_shifts_r = dict([(vf, rng.rand(num_refs, p_max[vf])) for vf in vfs])
 phase_shifts_d = deepcopy(phase_shifts_r)
 for vf in vfs:
     phase_shifts_d[vf][0] = rng.rand(p_max[vf])
+
+np.savetxt("phase_shifts_r-fo-py3.13.12-seed49.csv", phase_shifts_r['fo'], delimiter=',')
+np.savetxt("phase_shifts_r-so-py3.13.12-seed49.csv", phase_shifts_r['so'], delimiter=',')
+
+np.savetxt("phase_shifts_d-fo-py3.13.12-seed49.csv", phase_shifts_d['fo'], delimiter=',')
+np.savetxt("phase_shifts_d-so-py3.13.12-seed49.csv", phase_shifts_d['so'], delimiter=',')
 #
 ramp = 0.25 * period
 duration = 2 * period + ramp
