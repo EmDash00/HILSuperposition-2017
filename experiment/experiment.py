@@ -195,9 +195,13 @@ if FULLSCREEN:
 else:
   os.environ['SDL_VIDEO_CENTERED'] = '1'
   os.environ['SDL_VIDEO_WINDOW_POS'] = '%d,%d'%(0,0)
-  flags = pygame.RESIZABLE #| pygame.DOUBLEBUF
+  flags = pygame.RESIZABLE | pygame.NOFRAME #| pygame.DOUBLEBUF
 screen = pygame.display.set_mode(size,flags)
 screen.set_alpha(None)
+HEIGHT = size[0] / RATIO
+SC = float(HEIGHT)
+fader = pygame.Surface(size, pygame.SRCALPHA)
+RANGE = np.asarray(px2xy([[0.0, 0.0], size], size, SC))
 fader = pygame.Surface(size, pygame.SRCALPHA)
 pygame.display.set_caption("hcps v0.1")
 pygame.event.set_allowed([pygame.QUIT,
@@ -336,6 +340,61 @@ while not done:
           if not PAUSE:
             dbg("PAUSE")
           PAUSE = not PAUSE
+        elif event.key == pygame.K_k:  # Skip current trial
+            dbg("SKIP - moving to next trial")
+            # Save the skipped trial data with a skip marker
+            # Move to next trial
+            try:
+                trial = next(trial_gen)
+                if not ALLOW_DUPLICATES:
+                    while (
+                        len(
+                            glob.glob(
+                                os.path.join(
+                                    subject_dir,
+                                    "*" + protocol + "_" + str(trial["id"]) + ".npz",
+                                )
+                            )
+                        )
+                        > 0
+                    ):
+                        dbg(
+                            "SKIP subject="
+                            + subject_dir
+                            + "; protocol="
+                            + protocol
+                            + "_"
+                            + str(trial["id"])
+                        )
+                        trial = next(trial_gen)
+                dbg(
+                    "RUN subject="
+                    + subject_dir
+                    + "; protocol="
+                    + protocol
+                    + "_"
+                    + str(trial["id"])
+                )
+                TRIAL_STATE = "reset1"
+                trial_run = trial
+                trial_reset["init"] = [0.0]  # Reset with zero input
+                trial = trial_reset
+                (
+                    state,
+                    steps,
+                    _time,
+                    time_,
+                    realtime_,
+                    state_,
+                    inp_,
+                    dis_,
+                    out_,
+                    ref_,
+                ) = init(trial)
+                FADE = -1
+            except StopIteration:
+                dbg("No more trials - quitting")
+                done = True
         elif event.key == pygame.K_RIGHT:
           dbg("RIGHT")
           inp = lambda time,state : +ACCEL

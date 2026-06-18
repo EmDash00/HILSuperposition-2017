@@ -43,7 +43,8 @@ size = (1000,250)
 RATIO = 4
 HEIGHT = 400
 HEIGHT = 200
-size = (RATIO*HEIGHT,HEIGHT)
+# size = (RATIO*HEIGHT,HEIGHT)
+size = (1920, int(1920/4))
 
 
 # global constants
