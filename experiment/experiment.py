@@ -246,6 +246,7 @@ trial_reset = dict(duration=np.inf,
 def init(trial):
   state = trial['init']
   steps = 0
+  frame = 0
   _time = steps * STEP
   time_ = [_time]
   realtime_ = [time.time()]
@@ -315,6 +316,8 @@ if PLOT:
 
 
 # ---- game loop
+frame = 0
+t0 = time.time()
 while not done:
   # only handle events every SLIDER_SPT ticks
   if steps % SLIDER_SPT == 0:
@@ -595,8 +598,12 @@ while not done:
     #dbg('t = %0.1f, FPS = %0.1f' % (clock.get_time(),
     #                                clock.get_fps()))
 
+  while (time.time() - t0 < frame / float(FPS)):
+      pass
+
   # --- limit update rate to FPS
-  clock.tick(FPS*SLIDER_SPT)
+  frame += 1
+  clock.tick_busy_loop()
 
   if (steps+1) % 60 == 0:
     dbg('%d t = %0.1f, FPS = %0.1f, inp = %0.1f, state = %s' %
